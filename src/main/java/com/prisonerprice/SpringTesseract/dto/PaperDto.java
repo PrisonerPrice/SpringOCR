@@ -1,15 +1,10 @@
-package com.prisonerprice.SpringTesseract.model;
+package com.prisonerprice.SpringTesseract.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import com.prisonerprice.SpringTesseract.model.Paper;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Arrays;
 
-@Document
-public class Paper {
-    @Id
+public class PaperDto {
     private String id;
     private String field1_BusinessNameOfEmployer;
     private String field2_EIN;
@@ -27,11 +22,68 @@ public class Paper {
     private String field14_GroupMasterNumber;
     private boolean field15_CompanyRetirementAccount;
     private String field16_followingPlanYear;
-    private String[][] field17_forms = new String[12][6];
-    private byte[] field18_Signature;
-    private byte[] field19_Date;
+    private String field17_Line1;
+    private String field17_Line2;
+    private String field17_Line3;
+    private String field17_Line4;
+    private String field17_Line5;
+    private String field17_Line6;
+    private String field18_Signature;
+    private String field19_Date;
     private String field20_PrintName;
     private String field21_Title;
+
+    public PaperDto() {
+    }
+
+    public PaperDto(Paper paper) {
+        this.id = paper.getId();
+        this.field1_BusinessNameOfEmployer = paper.getField1_BusinessNameOfEmployer();
+        this.field2_EIN = paper.getField2_EIN();
+        this.field3_BusinessStreetAddress = paper.getField3_BusinessStreetAddress();
+        this.field4_City = paper.getField4_City();
+        this.field5_State = paper.getField5_State();
+        this.field6_ZipCode = paper.getField6_ZipCode();
+        this.field7_BusinessPhoneNumber = paper.getField7_BusinessPhoneNumber();
+        this.field8_SchwabIndividual401K = paper.isField8_SchwabIndividual401K();
+        this.field9_SchwabKeogh = paper.isField9_SchwabKeogh();
+        this.field10_SchwabQrpMoneyPurchase = paper.isField10_SchwabQrpMoneyPurchase();
+        this.field11_SchwabQrpProfileSharing = paper.isField11_SchwabQrpProfileSharing();
+        this.field12_SchwabSepIra = paper.isField12_SchwabSepIra();
+        this.field13_SchwabSimpleIra = paper.isField13_SchwabSimpleIra();
+        this.field14_GroupMasterNumber = paper.getField14_GroupMasterNumber();
+        this.field15_CompanyRetirementAccount = paper.isField15_CompanyRetirementAccount();
+        this.field16_followingPlanYear = paper.getField16_followingPlanYear();
+
+        final StringBuilder sb = new StringBuilder();
+        Arrays.stream(paper.getField17_forms()[0]).forEach(s -> sb.append(s + " "));
+        this.field17_Line1 = sb.toString();
+
+        sb.delete(0, sb.length());
+        Arrays.stream(paper.getField17_forms()[1]).forEach(s -> sb.append(s + " "));
+        this.field17_Line2 = sb.toString();
+
+        sb.delete(0, sb.length());
+        Arrays.stream(paper.getField17_forms()[2]).forEach(s -> sb.append(s + " "));
+        this.field17_Line3 = sb.toString();
+
+        sb.delete(0, sb.length());
+        Arrays.stream(paper.getField17_forms()[3]).forEach(s -> sb.append(s + " "));
+        this.field17_Line4 = sb.toString();
+
+        sb.delete(0, sb.length());
+        Arrays.stream(paper.getField17_forms()[4]).forEach(s -> sb.append(s + " "));
+        this.field17_Line5 = sb.toString();
+
+        sb.delete(0, sb.length());
+        Arrays.stream(paper.getField17_forms()[5]).forEach(s -> sb.append(s + " "));
+        this.field17_Line6 = sb.toString();
+
+        this.field18_Signature = paper.getField18_Signature().toString();
+        this.field19_Date = paper.getField19_Date().toString();
+        this.field20_PrintName = paper.getField20_PrintName();
+        this.field21_Title = paper.getField21_Title();
+    }
 
     public String getId() {
         return id;
@@ -169,27 +221,67 @@ public class Paper {
         this.field16_followingPlanYear = field16_followingPlanYear;
     }
 
-    public String[][] getField17_forms() {
-        return field17_forms;
+    public String getField17_Line1() {
+        return field17_Line1;
     }
 
-    public void setField17_forms(String[][] field17_forms) {
-        this.field17_forms = field17_forms;
+    public void setField17_Line1(String field17_Line1) {
+        this.field17_Line1 = field17_Line1;
     }
 
-    public byte[] getField18_Signature() {
+    public String getField17_Line2() {
+        return field17_Line2;
+    }
+
+    public void setField17_Line2(String field17_Line2) {
+        this.field17_Line2 = field17_Line2;
+    }
+
+    public String getField17_Line3() {
+        return field17_Line3;
+    }
+
+    public void setField17_Line3(String field17_Line3) {
+        this.field17_Line3 = field17_Line3;
+    }
+
+    public String getField17_Line4() {
+        return field17_Line4;
+    }
+
+    public void setField17_Line4(String field17_Line4) {
+        this.field17_Line4 = field17_Line4;
+    }
+
+    public String getField17_Line5() {
+        return field17_Line5;
+    }
+
+    public void setField17_Line5(String field17_Line5) {
+        this.field17_Line5 = field17_Line5;
+    }
+
+    public String getField17_Line6() {
+        return field17_Line6;
+    }
+
+    public void setField17_Line6(String field17_Line6) {
+        this.field17_Line6 = field17_Line6;
+    }
+
+    public String getField18_Signature() {
         return field18_Signature;
     }
 
-    public void setField18_Signature(byte[] field18_Signature) {
+    public void setField18_Signature(String field18_Signature) {
         this.field18_Signature = field18_Signature;
     }
 
-    public byte[] getField19_Date() {
+    public String getField19_Date() {
         return field19_Date;
     }
 
-    public void setField19_Date(byte[] field19_Date) {
+    public void setField19_Date(String field19_Date) {
         this.field19_Date = field19_Date;
     }
 

@@ -1,5 +1,6 @@
 package com.prisonerprice.SpringTesseract.service;
 
+import com.prisonerprice.SpringTesseract.model.Paper;
 import com.prisonerprice.SpringTesseract.repository.PaperRepository;
 import net.sourceforge.tess4j.ITessAPI;
 import net.sourceforge.tess4j.Tesseract;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -25,7 +27,7 @@ import java.util.*;
 import java.util.List;
 
 @Service
-public class PdfToImageToTextService {
+public class UploadAndTransformService {
     private final Logger LOG = LoggerFactory.getLogger(getClass());
     private final static int RENDER_DPI = 400;
     private final File currDir = new File(".");
@@ -127,12 +129,22 @@ public class PdfToImageToTextService {
         }
 
         // field: 18_Signature
-        ocrTasks.add(new OcrTask("18_Signature", new Rectangle(805, 848, 1650, 165), -1, images.get(1)));
+        ocrTasks.add(new OcrTask("18_Signature", new Rectangle(805, 846, 1650, 167), -1, images.get(1)));
         keyArray.add("18_Signature");
+        BufferedImage signatureImage = images.get(1).getSubimage(805, 846, 1650, 167);
+        ByteArrayOutputStream signatureBos = new ByteArrayOutputStream();
+        ImageIO.write(signatureImage, "jpg", signatureBos );
+        byte [] signatureBytes = signatureBos.toByteArray();
+        signatureBos.close();
 
         // field: 19_Date
         ocrTasks.add(new OcrTask("19_Date", new Rectangle(2515, 842, 690, 170), -1, images.get(1)));
         keyArray.add("19_Date");
+        BufferedImage dateImage = images.get(1).getSubimage(2515, 842, 690, 170);
+        ByteArrayOutputStream dateBos = new ByteArrayOutputStream();
+        ImageIO.write(dateImage, "jpg", dateBos );
+        byte [] dateBytes = dateBos.toByteArray();
+        dateBos.close();
 
         // field: 20_PrintName
         ocrTasks.add(new OcrTask("20_PrintName", new Rectangle(800, 1100, 1290, 90), -1, images.get(1)));
@@ -157,6 +169,9 @@ public class PdfToImageToTextService {
         // empty looper, used for waiting all tasks finish
         while (data.size() < FINISH_COUNT) { }
 
+        // Log info for signature and date
+        LOG.info("Signature: {}; Date: {}", data.get(keyArray.get(88)), data.get(keyArray.get(89)));
+
         Files.delete(path);
         long endTime = System.currentTimeMillis();
 
@@ -179,7 +194,41 @@ public class PdfToImageToTextService {
             sb.append(keyArray.get(i) + ": " + data.get(keyArray.get(i)) + "\n");
         }
 
+        saveToDatabase(data, signatureBytes, dateBytes, keyArray);
         return sb.toString();
+    }
+
+    private void saveToDatabase(Map<String, String> data, byte[] signatureBytes, byte[] dateBytes, List<String> keyList) {
+        Paper paper = new Paper();
+        paper.setField1_BusinessNameOfEmployer(data.get(keyList.get(0)));
+        paper.setField2_EIN(data.get(keyList.get(1)));
+        paper.setField3_BusinessStreetAddress(data.get(keyList.get(2)));
+        paper.setField4_City(data.get(keyList.get(3)));
+        paper.setField5_State(data.get(keyList.get(4)));
+        paper.setField6_ZipCode(data.get(keyList.get(5)));
+        paper.setField7_BusinessPhoneNumber(data.get(keyList.get(6)));
+        paper.setField8_SchwabIndividual401K(data.get(keyList.get(7)).equals("[m]"));
+        paper.setField9_SchwabKeogh(data.get(keyList.get(8)).endsWith("[m]"));
+        paper.setField10_SchwabQrpMoneyPurchase(data.get(keyList.get(9)).equals("[m]"));
+        paper.setField11_SchwabQrpProfileSharing(data.get(keyList.get(10)).equals("[m]"));
+        paper.setField12_SchwabSepIra(data.get(keyList.get(11)).equals("[m]"));
+        paper.setField13_SchwabSimpleIra(data.get(keyList.get(12)).endsWith("[m]"));
+        paper.setField14_GroupMasterNumber(data.get(keyList.get(13)));
+        paper.setField15_CompanyRetirementAccount(data.get(keyList.get(14)).equals("[m]"));
+        paper.setField16_followingPlanYear(data.get(keyList.get(15)));
+        String[][] form = new String[12][6];
+        int index = 16;
+        for (int row = 0; row < 12; row++) {
+            for (int col = 0; col < 6; col++, index++) {
+                form[row][col] = data.get(keyList.get(index));
+            }
+        }
+        paper.setField17_forms(form);
+        paper.setField18_Signature(signatureBytes);
+        paper.setField19_Date(dateBytes);
+        paper.setField20_PrintName(data.get(keyList.get(90)));
+        paper.setField21_Title(data.get(keyList.get(91)));
+        paperRepository.save(paper);
     }
 
     private List<BufferedImage> generateBufferedImagesFromPdf(File dstDir) throws IOException {
