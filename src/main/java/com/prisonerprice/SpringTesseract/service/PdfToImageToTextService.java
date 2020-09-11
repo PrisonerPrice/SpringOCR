@@ -59,19 +59,19 @@ public class PdfToImageToTextService {
         keyArray.add("2_EIN");
 
         // field: 3_BusinessStreetAddress
-        ocrTasks.add(new OcrTask("3_BusinessStreetAddress", new Rectangle(780, 1370, 1125, 100), -1, images.get(0)));
+        ocrTasks.add(new OcrTask("3_BusinessStreetAddress", new Rectangle(780, 1365, 1125, 100), -1, images.get(0)));
         keyArray.add("3_BusinessStreetAddress");
 
         // field: 4_City
-        ocrTasks.add(new OcrTask("4_City", new Rectangle(1955, 1370, 565, 100), -1, images.get(0)));
+        ocrTasks.add(new OcrTask("4_City", new Rectangle(1955, 1365, 565, 100), -1, images.get(0)));
         keyArray.add("4_City");
 
         // field: 5_State
-        ocrTasks.add(new OcrTask("5_State", new Rectangle(2560, 1370, 220, 100), -1, images.get(0)));
+        ocrTasks.add(new OcrTask("5_State", new Rectangle(2560, 1365, 220, 100), -1, images.get(0)));
         keyArray.add("5_State");
 
         // field: 6_ZipCode
-        ocrTasks.add(new OcrTask("6_ZipCode", new Rectangle(2835, 1370, 250, 100), -1, images.get(0)));
+        ocrTasks.add(new OcrTask("6_ZipCode", new Rectangle(2835, 1365, 250, 100), -1, images.get(0)));
         keyArray.add("6_ZipCode");
 
         // field: 7_BusinessPhoneNumber
