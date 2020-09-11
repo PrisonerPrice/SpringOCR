@@ -21,26 +21,26 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class PdfToImageToTextService {
     private final Logger LOG = LoggerFactory.getLogger(getClass());
     private final static int RENDER_DPI = 400;
+    private final File currDir = new File(".");
+    private final static int FINISH_COUNT = 92;
+    private final static int TASK_PER_THREAD = 10;
 
     @Autowired
     private PaperRepository paperRepository;
 
-    public String uploadFile(MultipartFile file) throws IOException, TesseractException {
+    public String uploadFile(MultipartFile file) throws IOException {
         long initTime = System.currentTimeMillis();
-        String returnedText = "";
         Map<String, String> data = new HashMap<>();
+        List<String> keyArray = new ArrayList<>();
 
         // save file in local
-        File currDir = new File(".");
         Path path = Paths.get(currDir.getAbsolutePath() + file.getOriginalFilename());
         File dstDir = new File(path.toString());
         try (OutputStream os = new FileOutputStream(dstDir)) {
@@ -48,124 +48,138 @@ public class PdfToImageToTextService {
         }
 
         List<BufferedImage> images = generateBufferedImagesFromPdf(dstDir);
-        Tesseract tesseract = new Tesseract();
-        tesseract.setTessVariable("user_defined_dpi", String.valueOf(RENDER_DPI));
-        //tesseract.setPageSegMode(ITessAPI.TessPageSegMode.PSM_SINGLE_CHAR);
-        tesseract.setDatapath(currDir.getAbsolutePath());
-//        for (BufferedImage bufferedImage : images) {
-//            LOG.info("Width is: " + bufferedImage.getWidth());
-//            LOG.info("Height is: " + bufferedImage.getHeight());
-//            returnedText += "[page " + page + "]\n";
-//            returnedText += tesseract.doOCR(bufferedImage, new Rectangle(0, 0, 3399, 4400));
-//            page++;
-//        }
+        List<OcrTask> ocrTasks = new ArrayList<>();
 
-        // scan data in page 1
-        returnedText += "[page " + 1 + "]\n";
         // field: 1_BusinessNameOfEmployer
-        String value1 = tesseract.doOCR(images.get(0), new Rectangle(780, 1175, 1540, 100)).trim();
-        returnedText += value1 + "\n";
-        data.put("1_BusinessNameOfEmployer", value1);
+        ocrTasks.add(new OcrTask("1_BusinessNameOfEmployer", new Rectangle(780, 1175, 1540, 100), -1, images.get(0)));
+        keyArray.add("1_BusinessNameOfEmployer");
 
         // field: 2_EIN
-        String value2Row = tesseract.doOCR(images.get(0), new Rectangle(2370, 1175, 840, 100)).trim();
-        String value2 = value2Row.replaceAll(" ", "");
-        returnedText += value2 + "\n";
-        data.put("2_EIN", value2);
+        ocrTasks.add(new OcrTask("2_EIN", new Rectangle(2370, 1175, 840, 100), -1, images.get(0)));
+        keyArray.add("2_EIN");
 
         // field: 3_BusinessStreetAddress
-        String value3 = tesseract.doOCR(images.get(0), new Rectangle(780, 1370, 1125, 100)).trim();
-        returnedText += value3 + "\n";
-        data.put("3_BusinessStreetAddress", value3);
+        ocrTasks.add(new OcrTask("3_BusinessStreetAddress", new Rectangle(780, 1370, 1125, 100), -1, images.get(0)));
+        keyArray.add("3_BusinessStreetAddress");
 
         // field: 4_City
-        String value4 = tesseract.doOCR(images.get(0), new Rectangle(1955, 1370, 565, 100)).trim();
-        returnedText += value4 + "\n";
-        data.put("4_City", value4);
+        ocrTasks.add(new OcrTask("4_City", new Rectangle(1955, 1370, 565, 100), -1, images.get(0)));
+        keyArray.add("4_City");
 
         // field: 5_State
-        String value5 = tesseract.doOCR(images.get(0), new Rectangle(2560, 1370, 220, 100)).trim();
-        returnedText += value5 + "\n";
-        data.put("5_State", value5);
+        ocrTasks.add(new OcrTask("5_State", new Rectangle(2560, 1370, 220, 100), -1, images.get(0)));
+        keyArray.add("5_State");
 
         // field: 6_ZipCode
-        String value6 = tesseract.doOCR(images.get(0), new Rectangle(2835, 1370, 250, 100)).trim();
-        returnedText += value6 + "\n";
-        data.put("6_ZipCode", value6);
+        ocrTasks.add(new OcrTask("6_ZipCode", new Rectangle(2835, 1370, 250, 100), -1, images.get(0)));
+        keyArray.add("6_ZipCode");
 
         // field: 7_BusinessPhoneNumber
-        String value7 = tesseract.doOCR(images.get(0), new Rectangle(780, 1535, 630, 100)).trim();
-        returnedText += value7 + "\n";
-        data.put("7_BusinessPhoneNumber", value7);
+        ocrTasks.add(new OcrTask("7_BusinessPhoneNumber", new Rectangle(780, 1535, 630, 100), -1, images.get(0)));
+        keyArray.add("7_BusinessPhoneNumber");
 
         // field: 8_SchwabIndividual401K
-        String value8 = tesseract.doOCR(images.get(0), new Rectangle(795, 1840, 70, 70)).trim();
-        returnedText += value8 + "\n";
-        data.put("8_SchwabIndividual401K", value8);
+        ocrTasks.add(new OcrTask("8_SchwabIndividual401K", new Rectangle(795, 1840, 70, 70), -1, images.get(0)));
+        keyArray.add("8_SchwabIndividual401K");
 
         // field: 9_SchwabKeogh
-        String value9 = tesseract.doOCR(images.get(0), new Rectangle(1405, 1840, 70, 70)).trim();
-        returnedText += value9 + "\n";
-        data.put("9_SchwabKeogh", value8);
+        ocrTasks.add(new OcrTask("9_SchwabKeogh", new Rectangle(1405, 1840, 70, 70), -1, images.get(0)));
+        keyArray.add("9_SchwabKeogh");
 
         // field: 10_SchwabQrpMoneyPurchase
-        String value10 = tesseract.doOCR(images.get(0), new Rectangle(1817, 1840, 70, 70)).trim();
-        returnedText += value10 + "\n";
-        data.put("10_SchwabQrpMoneyPurchase", value10);
+        ocrTasks.add(new OcrTask("10_SchwabQrpMoneyPurchase", new Rectangle(1817, 1840, 70, 70), -1, images.get(0)));
+        keyArray.add("10_SchwabQrpMoneyPurchase");
 
         // field: 11_SchwabQrpProfileSharing
-        String value11 = tesseract.doOCR(images.get(0), new Rectangle(2542, 1840, 70, 70)).trim();
-        returnedText += value11 + "\n";
-        data.put("11_SchwabQrpProfileSharing", value11);
+        ocrTasks.add(new OcrTask("11_SchwabQrpProfileSharing", new Rectangle(2542, 1840, 70, 70), -1, images.get(0)));
+        keyArray.add("11_SchwabQrpProfileSharing");
 
         // field: 12_SchwabSepIra
-        String value12 = tesseract.doOCR(images.get(0), new Rectangle(795, 1929, 70, 70)).trim();
-        returnedText += value12 + "\n";
-        data.put("12_SchwabSepIra", value12);
+        ocrTasks.add(new OcrTask("12_SchwabSepIra", new Rectangle(795, 1929, 70, 70), -1, images.get(0)));
+        keyArray.add("12_SchwabSepIra");
 
         // field: 13_SchwabSimpleIra
-        String value13 = tesseract.doOCR(images.get(0), new Rectangle(1240, 1929, 70, 70)).trim();
-        returnedText += value13 + "\n";
-        data.put("13_SchwabSimpleIra", value13);
+        ocrTasks.add(new OcrTask("13_SchwabSimpleIra", new Rectangle(1240, 1929, 70, 70), -1, images.get(0)));
+        keyArray.add("13_SchwabSimpleIra");
 
         // field: 14_GroupMasterNumber
-        String value14 = tesseract.doOCR(images.get(0), new Rectangle(2405, 1929, 800, 100)).trim();
-        returnedText += value14 + "\n";
-        data.put("14_GroupMasterNumber", value14);
+        ocrTasks.add(new OcrTask("14_GroupMasterNumber", new Rectangle(2405, 1929, 800, 100), -1, images.get(0)));
+        keyArray.add("14_GroupMasterNumber");
 
         // field: 15_CompanyRetirementAccount
-        String value15 = tesseract.doOCR(images.get(0), new Rectangle(795, 2022, 70, 70)).trim();
-        returnedText += value15 + "\n";
-        data.put("15_CompanyRetirementAccount", value15);
+        ocrTasks.add(new OcrTask("15_CompanyRetirementAccount", new Rectangle(795, 2022, 70, 70), -1, images.get(0)));
+        keyArray.add("15_CompanyRetirementAccount");
 
         // field: 16_followingPlanYear
-        String value16 = tesseract.doOCR(images.get(0), new Rectangle(2364, 2275, 300, 90)).trim();
-        returnedText += value16 + "\n";
-        data.put("16_followingPlanYear", value16);
+        ocrTasks.add(new OcrTask("16_followingPlanYear", new Rectangle(2364, 2275, 300, 90), -1, images.get(0)));
+        keyArray.add("16_followingPlanYear");
 
         // field: 17_form_rx_cx
         int[] xValues = new int[] {550, 1178, 1645, 2150, 2528, 2873};
         int[] yValues = new int[] {2650, 2755, 2860, 2965, 3070, 3175, 3280, 3385, 3490, 3495, 3605, 3710};
         int[] widthes = new int[] {600, 415, 405, 275, 240, 300};
         for (int row = 0; row < 12; row++) {
-            String line = "line " + (row + 1) + ": ";
             for (int col = 0; col < 6; col++) {
                 String key = "17_form" + "_r" + row + "_c" + col;
-                String value = tesseract.doOCR(
-                        images.get(0),
-                        new Rectangle(xValues[col], yValues[row], widthes[col], 100)
-                ).trim();
-                data.put(key, value);
-                line += value + " ";
+                ocrTasks.add(new OcrTask(key, new Rectangle(xValues[col], yValues[row], widthes[col], 100), -1, images.get(0)));
+                keyArray.add(key);
             }
-            returnedText += line + "\n";
         }
+
+        // field: 18_Signature
+        ocrTasks.add(new OcrTask("18_Signature", new Rectangle(805, 848, 1650, 165), -1, images.get(1)));
+        keyArray.add("18_Signature");
+
+        // field: 19_Date
+        ocrTasks.add(new OcrTask("19_Date", new Rectangle(2515, 842, 690, 170), -1, images.get(1)));
+        keyArray.add("19_Date");
+
+        // field: 20_PrintName
+        ocrTasks.add(new OcrTask("20_PrintName", new Rectangle(800, 1100, 1290, 90), -1, images.get(1)));
+        keyArray.add("20_PrintName");
+
+        // field: 21_Title
+        ocrTasks.add(new OcrTask("21_Title", new Rectangle(2125, 1100, 1060, 90), -1, images.get(1)));
+        keyArray.add("21_Title");
+
+        LOG.info("Finish creating tasks, time taken: " + (System.currentTimeMillis() - initTime));
+
+        List<OcrTask> readyToGoTasks = new ArrayList<>();
+        for (OcrTask task : ocrTasks) {
+            readyToGoTasks.add(task);
+            if (readyToGoTasks.size() == TASK_PER_THREAD) {
+                runTasks(data, new ArrayList<>(readyToGoTasks));
+                readyToGoTasks.clear();
+            }
+        }
+        runTasks(data, new ArrayList<>(readyToGoTasks));
+
+        // empty looper, used for waiting all tasks finish
+        while (data.size() < FINISH_COUNT) { }
 
         Files.delete(path);
         long endTime = System.currentTimeMillis();
-        returnedText = "Time taken: " + (endTime - initTime) + "\n" + returnedText;
 
-        return returnedText;
+        // generate output
+        StringBuffer sb = new StringBuffer();
+        sb.append("Time taken: " + (endTime - initTime) + " Finished at: " + new Date(endTime) + "\n");
+        int i;
+        for (i = 0; i < 16; i++) {
+            sb.append(keyArray.get(i) + ": " + data.get(keyArray.get(i)) + "\n");
+        }
+        i = 16;
+        for (int row = 0; row < 12; row++) {
+            String line = "field 17, line " + (row + 1);
+            for (int j = 0; j < 6; j++, i++) {
+                line += " " + data.get(keyArray.get(i));
+            }
+            sb.append(line + "\n");
+        }
+        for (i = 88; i < 92; i++) {
+            sb.append(keyArray.get(i) + ": " + data.get(keyArray.get(i)) + "\n");
+        }
+
+        return sb.toString();
     }
 
     private List<BufferedImage> generateBufferedImagesFromPdf(File dstDir) throws IOException {
@@ -174,11 +188,50 @@ public class PdfToImageToTextService {
         PDDocument document = PDDocument.load(dstDir);
         PDFRenderer pdfRenderer = new PDFRenderer(document);
 
-        for (int page = 0; page < document.getNumberOfPages(); page++) {
+        for (int page = 0; page < 2; page++) {
             images.add(pdfRenderer.renderImageWithDPI(page, RENDER_DPI, ImageType.RGB));
         }
 
         document.close();
         return images;
     }
+
+    private void runTasks(Map<String, String> data, List<OcrTask> tasks) {
+        Tesseract tesseract = new Tesseract();
+        tesseract.setTessVariable("user_defined_dpi", String.valueOf(RENDER_DPI));
+        tesseract.setDatapath(currDir.getAbsolutePath());
+        Runnable runnable = () -> {
+            for (OcrTask task : tasks) {
+                if (task.mode != -1) {
+                    tesseract.setPageSegMode(task.mode);
+                }
+                String value = null;
+                try {
+                    value = tesseract.doOCR(task.image, task.rectangle).trim();
+                } catch (TesseractException e) {
+                    e.printStackTrace();
+                }
+                data.put(task.key, value);
+            }
+        };
+        Thread thread = new Thread(runnable);
+        thread.start();
+    }
+
+    class OcrTask {
+        String key;
+        Rectangle rectangle;
+        int mode;
+        BufferedImage image;
+
+        public OcrTask(String key, Rectangle rectangle, int mode, BufferedImage image) {
+            this.key = key;
+            this.rectangle = rectangle;
+            this.mode = mode;
+            this.image = image;
+        }
+    }
 }
+
+
+//tesseract.setPageSegMode(ITessAPI.TessPageSegMode.PSM_SINGLE_CHAR);
