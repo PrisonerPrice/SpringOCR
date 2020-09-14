@@ -184,7 +184,7 @@ public class UploadAndTransformService {
         }
         i = 16;
         for (int row = 0; row < 12; row++) {
-            String line = "field 17, line " + (row + 1);
+            String line = "17_form_line" + (row + 1) + ":";
             for (int j = 0; j < 6; j++, i++) {
                 line += " " + data.get(keyArray.get(i));
             }
