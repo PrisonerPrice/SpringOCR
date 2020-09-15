@@ -1,7 +1,6 @@
 package com.prisonerprice.SpringTesseract.controller;
 
 import com.prisonerprice.SpringTesseract.dto.PaperDto;
-import com.prisonerprice.SpringTesseract.model.Paper;
 import com.prisonerprice.SpringTesseract.service.PaperCompareService;
 import com.prisonerprice.SpringTesseract.service.PdfToTextService;
 import com.prisonerprice.SpringTesseract.service.UploadAndTransformService;
