@@ -248,7 +248,7 @@ public class UploadAndTransformService {
     private void runTasks(Map<String, String> data, List<OcrTask> tasks) {
         Tesseract tesseract = new Tesseract();
         tesseract.setTessVariable("user_defined_dpi", String.valueOf(RENDER_DPI));
-        tesseract.setDatapath(currDir.getAbsolutePath());
+        tesseract.setDatapath("/app");
         Runnable runnable = () -> {
             for (OcrTask task : tasks) {
                 if (task.mode != -1) {
@@ -267,7 +267,7 @@ public class UploadAndTransformService {
         thread.start();
     }
 
-    class OcrTask {
+    public class OcrTask {
         String key;
         Rectangle rectangle;
         int mode;
