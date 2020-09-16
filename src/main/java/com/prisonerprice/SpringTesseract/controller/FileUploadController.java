@@ -17,6 +17,7 @@ import java.util.List;
 @Api(tags = "Upload Controller")
 @RestController
 @RequestMapping(value = {"/rest"})
+@CrossOrigin
 public class FileUploadController {
 
     @Autowired

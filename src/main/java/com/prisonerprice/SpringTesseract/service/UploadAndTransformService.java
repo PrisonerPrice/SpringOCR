@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class UploadAndTransformService {
@@ -39,7 +41,7 @@ public class UploadAndTransformService {
 
     public String uploadFile(MultipartFile file) throws IOException {
         long initTime = System.currentTimeMillis();
-        Map<String, String> data = new HashMap<>();
+        ConcurrentMap<String, String> data = new ConcurrentHashMap<>();
         List<String> keyArray = new ArrayList<>();
 
         // save file in local
@@ -156,6 +158,7 @@ public class UploadAndTransformService {
 
         LOG.info("Finish creating tasks, time taken: " + (System.currentTimeMillis() - initTime));
 
+        long initProcessingTime = System.currentTimeMillis();
         List<OcrTask> readyToGoTasks = new ArrayList<>();
         for (OcrTask task : ocrTasks) {
             readyToGoTasks.add(task);
@@ -167,7 +170,14 @@ public class UploadAndTransformService {
         runTasks(data, new ArrayList<>(readyToGoTasks));
 
         // empty looper, used for waiting all tasks finish
-        while (data.size() < FINISH_COUNT) { }
+        int count = 0;
+        while (data.size() < FINISH_COUNT) {
+            if (data.size() > count) {
+                LOG.info("- In processing - " + count + " tasks finished");
+                LOG.info("- In processing - " + (System.currentTimeMillis() - initProcessingTime) / 1000 + " seconds eclipsed");
+                count = data.size();
+            }
+        }
 
         // Log info for signature and date
         LOG.info("Signature: {}; Date: {}", data.get(keyArray.get(88)), data.get(keyArray.get(89)));
@@ -229,6 +239,7 @@ public class UploadAndTransformService {
         paper.setField20_PrintName(data.get(keyList.get(90)));
         paper.setField21_Title(data.get(keyList.get(91)));
         paperRepository.save(paper);
+        LOG.info("Successfully save to db");
     }
 
     private List<BufferedImage> generateBufferedImagesFromPdf(File dstDir) throws IOException {
@@ -249,7 +260,9 @@ public class UploadAndTransformService {
         Tesseract tesseract = new Tesseract();
         tesseract.setTessVariable("user_defined_dpi", String.valueOf(RENDER_DPI));
         tesseract.setDatapath("/app");
+        //tesseract.setDatapath(".");
         Runnable runnable = () -> {
+            LOG.info("New thread started!");
             for (OcrTask task : tasks) {
                 if (task.mode != -1) {
                     tesseract.setPageSegMode(task.mode);
@@ -261,6 +274,7 @@ public class UploadAndTransformService {
                     e.printStackTrace();
                 }
                 data.put(task.key, value);
+                LOG.info("Finish one task! Task key is: " + task.key);
             }
         };
         Thread thread = new Thread(runnable);
